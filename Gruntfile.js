@@ -244,16 +244,22 @@ module.exports = function (grunt) {
 
     // Re-write url's to make yeoman dist dir work with github pages
     replace: {
-      urlfix: {
+      dist: {
         src: ['*.html', 'views/{,*/}*.html'],
-        dest: '<%= yeoman.dist %>',
-        replacements: [{
-          from: /\/#\//g,
-          to: function(matchedWord) {
-            console.log('Grunt task replace found a match!');
-            return '/m101js' + matchedWord;
+        overwrite: true,
+        replacements: [
+          {
+            from: /\/#\//g,
+            to: function(matchedWord) {
+              console.log('Grunt task replace found a match!');
+              return '/m101js' + matchedWord;
+            }
+          },
+          {
+            from: 'Foo',
+            to: 'Bar'
           }
-        }]
+        ]
       }
     },
 
@@ -371,7 +377,7 @@ module.exports = function (grunt) {
   grunt.registerTask('build', [
     'clean:dist',
     'bower-install',
-    'replace',
+    'replace:dist',
     'useminPrepare',
     'concurrent:dist',
     'autoprefixer',
