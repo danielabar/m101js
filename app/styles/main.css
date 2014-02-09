@@ -24,8 +24,10 @@ body {
 .notes-attention {
   background-color: #f2dede;
   padding: 10px 10px 10px 10px;
-  -moz-border-radius: 15px;
-  border-radius: 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
 }
 
 /* Make the masthead heading the same height as the navigation */

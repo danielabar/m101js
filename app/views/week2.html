@@ -57,10 +57,12 @@
 
   Can also be applied to strings, for example, find people whose name is lexicographically less than D
   <pre>db.people.find( { name : { $lt : "D" } } )</pre>
-  <em>NOTE: Mongo has NO knowledge of locale. Sorts by code units in UTF8. Only correct for POSIX/C locales</em>
-  <br />
-  <em>All comparison operations are strongly typed</em>
-  <br /><br />
+
+  <div class="notes-attention">
+    Mongo has NO knowledge of locale. Sorts by code units in UTF8.
+    <br>
+    Only correct for POSIX/C locales. All comparison operations are strongly typed
+  </div>
 
   Find results in people collection that have the profession property (because not all docs in a collection need to follow the same schema)
   <pre>db.people.find( { profession : { $exists : true }  } )</pre>
@@ -72,11 +74,11 @@
 
   <h4>Regular Expressions</h4>
   Mongo supports searching strings by regular expressions using Perl compatible libpcre
-  <br />
-  <em>NOTE: Regular expressions are not as optimizable as queries using string inequalities.</em>
-  <br />
-  <em>HOWEVER: Regex's that are optimizable are those starting with caret ^ - begins, followed by non-wildcard, i.e. literal strings and numbers</em>
-  <br /><br />
+
+  <div class="notes-attention">
+    Regular expressions are not as optimizable as queries using string inequalities. However, regex's that are optimizable are those starting with caret ^ - begins, followed by non-wildcard, i.e. literal strings and numbers.
+  </div>
+
   Find people where name contains the letter 'a'
   <pre>db.people.find( { name : { $regex : "a" } } )</pre>
   <br />
@@ -340,6 +342,7 @@
     var query = { 'student' : 'Joe', 'grade' : { '$gt' : 80, '$lt' : 95 } };
     db.collection('grades').find(query).each(function(err, doc) {...});
   </pre>
+  <br>
 
   <h4>Order of Operations</h4>
   <ol>
@@ -349,43 +352,52 @@
   </ol>
 
   <p class="notes-attention">No matter what order you specify in code, driver re-orders operations</p>
-  <!-- wip -->
-  <!--
-      var grades = db.collection('grades');
-      var cursor = grades.find({});
-      cursor.skip(1);
-      cursor.limit(4);
-      cursor.sort('grade', 1);
+  <pre>
+    var grades = db.collection('grades');
+    var cursor = grades.find({});
+    cursor.skip(1);
+    cursor.limit(4);
+    cursor.sort('grade', 1);
+  </pre>
 
-  cursor.sort([['grade', 1], ['student', -1]]);
-  - sort first by grade, then by student DESCENDING
-  - order of sort criteria within array is important
+  <h4>Sorting</h4>
+  sort first by grade, then by student DESCENDING
+  order of sort criteria within array is important
+  <pre>cursor.sort([['grade', 1], ['student', -1]]);</pre>
 
-     var options = { 'skip' : 1,
-                     'limit' : 4,
-                     'sort' : [['grade', 1], ['student', -1]] };
-  var cursor = grades.find({}, {}, options);
-  - first arg is query criteria (blank means find all)
-  - second arg is projection (i.e. which fields from doc to return, blank means return all)
-  - third arg is options (sort, skip, limit)
+  <h4>Find with Options</h4>
+  <ol>
+    <li>First arg is query <em>criteria</em> (blank means find all)</li>
+    <li>Second arg is <em>projection</em> (i.e. which fields from doc to return, blank means return all)</li>
+    <li>Third arg is options (sort, skip, limit)</li>
+  </ol>
+  <pre>
+    var options = { 'skip' : 1,
+                   'limit' : 4,
+                   'sort' : [['grade', 1], ['student', -1]] };
+    var cursor = grades.find({}, {}, options);
+  </pre>
 
-  Save
-  db.collection('grades').save(doc, function(err, saved)...
-  - checks to see if doc has _id, if not, will insert a new doc, if yes, will assume you meant to do an upsert
+  <h4>Save</h4>
+  Checks to see if doc has _id, if not, will insert a new doc, if yes, will assume you meant to do an upsert
+  <pre>db.collection('grades').save(doc, function(err, saved)...</pre>
 
-  findAndModify
-  - atomically finds and updates the doc
-  - only finds and modifies a SINGLE document
+  <h4>findAndModify</h4>
+  <ul>
+    <li>Atomically finds and updates the doc</li>
+    <li>Only finds and modifies a SINGLE document</li>
+    <li>query: search criteria</li>
+    <li>sort (could be []) - required in case query is not specific enough and returns multiple docs</li>
+    <li>operator: update operation to perform</li>
+    <li>options: new:true means return the doc after its been modified, false would return doc before it was modified</li>
+  </ul>
+  <pre>
+    var query = { 'name' : 'comments' };
+    var sort = [];
+    var operator = { '$inc' : { 'counter' : 1 } };
+    var options = { 'new' : true };
+    db.collection('counters').findAndModify(query, sort, operator, options, function(err, doc)...
+  </pre>
 
-      var query = { 'name' : 'comments' };
-      var sort = [];
-      var operator = { '$inc' : { 'counter' : 1 } };
-      var options = { 'new' : true };
-      db.collection('counters').findAndModify(query, sort, operator, options, function(err, doc)...
-  - query: search criteria
-  - sort (could be []) - required in case query is not specific enough and returns multiple docs
-  - operator: update operation to perform
-  - options: new:true means return the doc after its been modified, false would return doc before it was modified
-  -->
   </div><!-- row -->
 </div><!-- notes-container -->
