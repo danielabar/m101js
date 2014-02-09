@@ -21,8 +21,22 @@ body {
   margin-left: 10px;
 }
 
+.notes-image {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
 .notes-attention {
   background-color: #f2dede;
+  padding: 10px 10px 10px 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+}
+
+.notes-info {
+  background-color: #FCF6D9;
   padding: 10px 10px 10px 10px;
   margin-top: 10px;
   margin-bottom: 10px;
