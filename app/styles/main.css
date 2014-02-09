@@ -18,7 +18,14 @@ body {
 }
 
 .notes-container {
-  margin-left: 15px;
+  margin-left: 10px;
+}
+
+.notes-attention {
+  background-color: #f2dede;
+  padding: 10px 10px 10px 10px;
+  -moz-border-radius: 15px;
+  border-radius: 15px;
 }
 
 /* Make the masthead heading the same height as the navigation */
