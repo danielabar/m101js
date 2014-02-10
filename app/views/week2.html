@@ -1,47 +1,60 @@
 <div class="notes-container">
   <div class="row">
 
-  <h1>WEEK 2: CRUD</h1>
-  <br />
+  <h1>CRUD</h1>
+  <hr>
 
-  <h3>BSON</h3>
-  <a href="http://bsonspec.org" target="_blank">bsonspec.org</a>
+  <div class="notes-info">
+    <h2>BSON</h2>
+    <a href="http://bsonspec.org" target="_blank">bsonspec.org</a>
+    <ul>
+    	<li>ISODate</li>
+    	<li>NumberLong</li>
+    </ul>
+  </div>
+
+  <h2>Secrets of the Mongo Shell</h2>
   <ul>
-  	<li>ISODate</li>
-  	<li>NumberLong</li>
+    <li>Can execute any JavaScript</li>
+    <li>Supports tab complete</li>
   </ul>
-  <br />
 
-  <h3>Shell</h3>
-  <p>Can execute any JavaScript<p>
-  <p>Supports tab complete</p>
-  <pre>>help</pre>
-  <p>Dislays key binding</p>
-  <pre>
-  >help keys
-  </pre>
-  <p>Print out the database currently in use</p>
-  <pre>db</pre>
-  <p>Shell interprets people as property of db - named collection</p>
-  <pre>db.people.insert(<doc>)</pre>
-  <p>Return all the documents in the people collection</p>
-  <pre>db.peple.find()</pre>
-  <p>Pretty print the output</p>
-  <pre>db.people.find().pretty()</pre>
-  <p>Returns one document at random from the people collection</p>
-  <pre>db.people.findOne()</pre>
-  <p>Can pass criteria to findOne (sort of like WHERE in SQL)</p>
+  List available commands
+  <pre>&gt; help</pre>
+
+  Dislays key binding
+  <pre>&gt; help keys</pre>
+
+  Print out the database currently in use
+  <pre>&gt; db</pre>
+
+  Shell interprets <code>people</code> (named collection) as property of db
+  <pre>&gt; db.people.insert(<doc>)</pre>
+
+  Return all the documents in the people collection
+  <pre>&gt; db.peple.find()</pre>
+
+  Pretty print the output
+  <pre>&gt; db.people.find().pretty()</pre>
+
+  Return one document at random from the people collection
+  <pre>&gt; db.people.findOne()</pre>
+
+  Pass criteria to findOne, similar to WHERE in SQL
   <ul>
   	<li>Return documents having "name" property with value of "Jones"</li>
   	<li>Query is represented as a document, there is no notion of a separate query language</li>
   </ul>
-  <pre>db.people.findOne({"name" : "Jones"})</pre>
-  <p>Second argument is <em>projection</em>, specifies which fields should be returned. This is analogous to column portion of SQL SELECT</p>
+  <pre>&gt; db.people.findOne({"name" : "Jones"})</pre>
+
+  Second argument to <code>find</code> is <em>projection</em>, specifies which fields should be returned.
+  <br>
+  This is analogous to column portion of SQL SELECT
+  <br>
   _id defaults to being visible in results, even if you don't ask for it
   <pre>db.people.findOne({"name":"Jones"}, {"name" : true})</pre>
-  <br />
 
-  <h4>ObjectID construction</h4>
+  <h3>ObjectID construction</h3>
   <p>PK _id is immutable<p>
   <p>Globally unique identifier consists of:</p>
   <ul>
@@ -51,7 +64,7 @@
     <li>Counter (global to process)</li>
   </ul>
 
-  <h3>Query Operators</h3>
+  <h2>Query Operators</h2>
   Search scores collection where score > 95 and score &lt;= 98 and type is essay
   <pre>db.scores.find({ score: { $gt : 95 , $lte : 98}, type: "essay" })</pre>
 
@@ -66,13 +79,11 @@
 
   Find results in people collection that have the profession property (because not all docs in a collection need to follow the same schema)
   <pre>db.people.find( { profession : { $exists : true }  } )</pre>
-  <br />
 
   Find people whose name propery is of type String
   <pre>db.people.find( {name : { $type : 2 } } )</pre>
-  <br />
 
-  <h4>Regular Expressions</h4>
+  <h3>Regular Expressions</h3>
   Mongo supports searching strings by regular expressions using Perl compatible libpcre
 
   <div class="notes-attention">
@@ -81,17 +92,14 @@
 
   Find people where name contains the letter 'a'
   <pre>db.people.find( { name : { $regex : "a" } } )</pre>
-  <br />
 
   Find people where name ends with the letter 'e'
   <pre>db.people.find( { name : { $regex : "e$" } } )</pre>
-  <br />
 
   Find people where name starts with the letter 'A'
   <pre>db.people.find( { name : { $regex : "^A" } } )</pre>
-  <br />
 
-  <h4>Logical OR</h4>
+  <h3>Logical OR</h3>
   OR is a <em>PREFIX operator</em>, it comes before the arguments.
   <br />
   OR takes as operand, an array of documents to be used as queries
@@ -100,7 +108,7 @@
   <pre>db.people.find( { $or : [ { name : { $regex : "e$" } }, { age : { $exists : true } }] } )</pre>
   <br />
 
-  <h4>Logical AND</h4>
+  <h3>Logical AND</h3>
   <br />
   Find people where name is lexicographically greater than C and name contains the letter 'a'
   <pre>db.people.find( { $and : [{ name : {$gt : "C"} }, {name: { $regex : "a"} }] } )</pre>
@@ -110,7 +118,7 @@
   <pre>db.people.find( { name : { $gt : "C", $regex : "a" }} )</pre>
   <br>
 
-  <h4>Arrays</h4>
+  <h3>Arrays</h3>
   <ul>
     <li>Matching is polymorphic over strings and arrays</li>
     <li>Common idiom in Mongo: Embed an array of strings in a document, then query by string value</li>
@@ -127,7 +135,7 @@
   <pre>db.accounts.find( { name : { $in : ["Howard", "John"] } } );</pre>
   <br>
 
-  <h4>Embedded documents</h4>
+  <h3>Embedded documents</h3>
   Given this data
   <pre>db.users.insert( { name : "richard", email : { work : "richard@10gen.com", personal : "kreuter@example.com"} } );</pre>
   You could try to find by exact match, BUT order of fields is important because Mongo will search byte by byte.
@@ -138,7 +146,7 @@
   <pre>db.users.find( { "email.work" : "richard@10gen.com" } );</pre>
   <br>
 
-  <h4>Cursors</h4>
+  <h3>Cursors</h3>
   <pre>cur = db.people.find(); null;</pre>
   cur is a variable holding on to a cursor object
   <pre>
@@ -149,7 +157,7 @@
   <pre>while (cur.hasNext()) printjson(cur.next()));</pre>
   <br>
 
-  <h4>Cursor Methods</h4>
+  <h3>Cursor Methods</h3>
   Cannot apply these methods after you've started retrieving documents, because sort & limit are processed inside the database engine, server side, NOT in client side memory.
   <br>
   sort and limit modify information that's transmitted to database.
@@ -166,11 +174,11 @@
   <pre>cur.sort().limit(3).skip(2); null;</pre>
   <br>
 
-  <h4>Counting Documents</h4>
+  <h3>Counting Documents</h3>
   <pre>db.scores.count( {type : "exam"} );</pre>
   <br>
 
-  <h4>Updating Documents</h4>
+  <h3>Updating Documents</h3>
   Types of Updates
   <ul>
     <li>Wholesale replacement of doc</li>
@@ -280,7 +288,7 @@
   <br>
 
   <div class="notes-attention">
-    <h4><strong>Write Concurrency Implications</strong></h4>
+    <h3><strong>Write Concurrency Implications</strong></h3>
     <ul>
       <li>Inside mongodb, there is single thread for each operation that's being executed, however, this thread may yield (i.e. pause) to allow other operations to proceed.</li>
       <li>Write operations, even if they affect multiple documents ARE NOT ISOLATED TRANSACTIONS.</li>
@@ -290,7 +298,7 @@
   </div>
   <br>
 
-  <h4>Removing Data</h4>
+  <h3>Removing Data</h3>
   Three different options.
   Remove works similar to find.
   If specify no args, all docs in collection will be removed one by one
@@ -307,7 +315,7 @@
   <pre>db.people.drop();</pre>
 
   <div class="notes-attention">
-    <h4><strong>DROP vs REMOVE</strong></h4>
+    <h3><strong>DROP vs REMOVE</strong></h3>
     <ul>
       <li>If collection has metadata associated with it (eg: indicies), this is also discarded on drop, but maintained on remove</li>
       <li>Remove can affect arbitrary number of documents, just like with multi update, this is NOT atomic transaction</li>
@@ -317,7 +325,7 @@
   </div>
   <br>
 
-  <h4>ERRORS</h4>
+  <h3>ERRORS</h3>
   <ul>
     <li>Interactive shell always checks to see if last operation succeeded or failed, and displays error message if failure</li>
     <li>Returns outcome of last operation on current connection</li>
@@ -330,10 +338,10 @@
   <pre>db.runCommand( { getLastError : 1 } );</pre>
   <br>
 
-  <h3>Node.js Driver &amp; CRUD</h3>
+  <h2>Node.js Driver &amp; CRUD</h2>
   <br>
 
-  <h4>Cursor</h4>
+  <h3>Cursor</h3>
   Definition is synchronous.
   When call .each or .toArray, then it sends request to db for docs and mongod responds. Response is a batch of documents, not the whole thing at once
   <br><br>
@@ -344,7 +352,7 @@
   </pre>
   <br>
 
-  <h4>Order of Operations</h4>
+  <h3>Order of Operations</h3>
   <ol>
     <li>Sort</li>
     <li>Skip</li>
@@ -360,12 +368,12 @@
     cursor.sort('grade', 1);
   </pre>
 
-  <h4>Sorting</h4>
+  <h3>Sorting</h3>
   sort first by grade, then by student DESCENDING
   order of sort criteria within array is important
   <pre>cursor.sort([['grade', 1], ['student', -1]]);</pre>
 
-  <h4>Find with Options</h4>
+  <h3>Find with Options</h3>
   <ol>
     <li>First arg is query <em>criteria</em> (blank means find all)</li>
     <li>Second arg is <em>projection</em> (i.e. which fields from doc to return, blank means return all)</li>
@@ -378,11 +386,11 @@
     var cursor = grades.find({}, {}, options);
   </pre>
 
-  <h4>Save</h4>
+  <h3>Save</h3>
   Checks to see if doc has _id, if not, will insert a new doc, if yes, will assume you meant to do an upsert
   <pre>db.collection('grades').save(doc, function(err, saved)...</pre>
 
-  <h4>findAndModify</h4>
+  <h3>findAndModify</h3>
   <ul>
     <li>Atomically finds and updates the doc</li>
     <li>Only finds and modifies a SINGLE document</li>

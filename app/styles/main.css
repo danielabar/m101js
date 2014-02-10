@@ -17,13 +17,30 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
+hr {
+  border-top: 2px solid #BDB8F5;
+}
+
+pre {
+  background-color: #DDD9D9;
+}
+
+code {
+  background-color: #DDD9D9;
+}
+
 .notes-container {
   margin-left: 10px;
+  margin-right: 10px;
 }
 
 .notes-image {
   margin-top: 10px;
   margin-bottom: 10px;
+  border-style: dotted;
+  border-width: 2px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
 }
 
 .notes-attention {
