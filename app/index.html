@@ -25,7 +25,12 @@
     <![endif]-->
 
     <!-- Add your site or application content here -->
-    <div class="container" ng-view=""></div>
+    <div class="container ">
+      <div ng-controller="NavbarCtrl">
+        <ng-include src="'views/navbar.html'"></ng-include>
+      </div>
+      <ng-view></ng-view>
+    </div>
 
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
      <script>
@@ -60,6 +65,7 @@
         <script src="scripts/controllers/main.js"></script>
         <script src="scripts/controllers/week1.js"></script>
         <script src="scripts/controllers/week2.js"></script>
+        <script src="scripts/controllers/NavbarController.js"></script>
         <!-- endbuild -->
 </body>
 </html>
