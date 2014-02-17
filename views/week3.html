@@ -1,4 +1,4 @@
-<div class="notes-container"><div class="row"><h1>Schema Design</h1><hr><div class="notes-info"><h2>Application-Driven Schema Considerations</h2><ul><li>Keep data in a way that's conducive to <em>how</em> application will be using the data</li><li>What pieces of data are used together?</li><li>Rich documents</li><li>Pre-join/embed data</li><li>No mongo joins (because it doesn't scale)</li><li>No constraints, no FKs</li><li>Atomic operations (not transactions)</li><li>No declared schema, but app will have schema - docs in collection will have similar structure</li></ul></div><h2>Relational Review: Goals of Third Normal Form</h2><ul><li>No duplication of data</li><li>Every non-key attribute in a table must provide a <em>fact about they key, the whole key, and nothing but the key</em></li><li>Free database of modification anomalies</li><li>Minimize redesign when extending the database</li><li>Avoid bias towards any particular access pattern</li></ul><div class="notes-info"><h2>Mongo Schema Design</h2><ul><li>If you find yourself modelling mongo shcema the same way you'd do a relational design, you're probably doing it wrong</li><li>Always embed docs where possible, to avoid multiple disk I/O</li><li class="text-danger">Exception: doc max size = 16M</li></ul></div><h2>Living without Constraints</h2><ul><li>How to keep data consistent without relational FK</li><li>Embedding solves this problem by <em>pre-joining</em> the data (eg: store array of comments in the posts collection)</li></ul><h2>Lack of Transactions</h2><ul><li>No traansactions, but do have atomic operations</li><li>When working on a single document, work will be completed before any other thread can see that doc</li><li>Can accomplish same effect as transaction if document is embedded</li></ul><div class="notes-attention"><h3>Approaches to Overcoming lack of Transactions</h3><ol><li>Restructure code so working within single document</li><li>Implement software locking</li><li>Tolerate a little big of inconsistency, eg: friend feed in Facebook, fine if not everyone sees feed update at same time</li></ol></div><h2>1:1 Relations</h2><p>Each item corresponds to exactly one item, eg: one employee has one resume and one resume belongs to one employee</p><h3>Consider whether to model as separate collection or embed</h3><ul><li>Frequency of access, eg: if mostly access employee data and rarely access resume, might want to keep them in separate collections</li><li>Which item is growing more often?</li><li>If one of the items is > 16M, cannot be embedded</li><li>If can't withstand any inconsistency, may need to embed one doc within the other</li></ul><h2>One to Many Relation</h2><p>Example: City to People, NYC has 8M people, can't embed array of people in city collection because its too big</p><p>Also shouldn't embed city within people because city will get duplicated in each person doc, which could lead to inconsistency</p><h3>True Linking Example</h3><pre>
+<div class="notes-container"><div class="row"><h1>Schema Design</h1><hr><div class="notes-info"><h2>Application-Driven Schema Considerations</h2><ul><li>Keep data in a way that's conducive to <em>how</em> application will be using the data</li><li>What pieces of data are used together?</li><li>Rich documents</li><li>Pre-join/embed data</li><li>No mongo joins (because it doesn't scale)</li><li>No constraints, no FKs</li><li>Atomic operations (not transactions)</li><li>No declared schema, but app will have schema - docs in collection will have similar structure</li></ul></div><h2>Relational Review: Goals of Third Normal Form</h2><ul><li>No duplication of data</li><li>Every non-key attribute in a table must provide a <em>fact about they key, the whole key, and nothing but the key</em></li><li>Free database of modification anomalies</li><li>Minimize redesign when extending the database</li><li>Avoid bias towards any particular access pattern</li></ul><div class="notes-info"><h2>Mongo Schema Design</h2><ul><li>If you find yourself modelling mongo shcema the same way you'd do a relational design, you're probably doing it wrong</li><li>Always embed docs where possible, to avoid multiple disk I/O</li><li class="text-danger">Exception: doc max size = 16M</li></ul></div><h2>Living without Constraints</h2><ul><li>How to keep data consistent without relational FK</li><li>Embedding solves this problem by <em>pre-joining</em> the data (eg: store array of comments in the posts collection)</li></ul><h2>Lack of Transactions</h2><ul><li>No traansactions, but do have atomic operations</li><li>When working on a single document, work will be completed before any other thread can see that doc</li><li>Can accomplish same effect as transaction if document is embedded</li></ul><div class="notes-attention"><h3>Approaches to Overcoming lack of Transactions</h3><ol><li>Restructure code so working within single document</li><li>Implement software locking</li><li>Tolerate a little big of inconsistency, eg: friend feed in Facebook, fine if not everyone sees feed update at same time</li></ol></div><h2>1:1 Relation</h2><p>Each item corresponds to exactly one item, eg: one employee has one resume and one resume belongs to one employee</p><h3>Consider whether to model as separate collection or embed</h3><ul><li>Frequency of access, eg: if mostly access employee data and rarely access resume, might want to keep them in separate collections</li><li>Which item is growing more often?</li><li>If one of the items is > 16M, cannot be embedded</li><li>If can't withstand any inconsistency, may need to embed one doc within the other</li></ul><h2>One to Many Relation</h2><p>Example: City to People, NYC has 8M people, can't embed array of people in city collection because its too big</p><p>Also shouldn't embed city within people because city will get duplicated in each person doc, which could lead to inconsistency</p><h3>True Linking Example</h3><p>Link city in <code>people</code> doc to _id in <code>city</code> doc</p><pre>
       // People Collection
       {
         name : "Andrew",
@@ -9,4 +9,42 @@
       {
         _id : "NYC"
       }
-    </pre></div></div>
+    </pre><h2>One to Few Relation</h2><p>Example: Post to Comment, embed Comments within Post collection because there's only a few comments per post</p><h2>Many to Many Relation</h2><p>Example: Books to Authors, Students to Teachers</p><p>Tends to be Few to Few, example: each Book probably has small number of Authors, each individual Author has written a relatively small number of books</p><pre>
+      // Authors
+      {
+        _id: 27,
+        author_name: "Margaret",
+        books: [12, 7, 8]
+      }
+      // Books
+      {
+        _id: 12,
+        title: "Gone with the Wind",
+        authors: [27]
+      }
+    </pre><div class="notes-attention"><p>Not recommended to link in both directions because could get inconsistency</p><p>Careful about embedding when it might not apply. Example: Teachers Students - may want to add a teacher to the system before they have any students. In this case, wouldn't make sense to embed teachers in students</p></div><h2>Multikey Indexes</h2><pre>
+      // Students
+      {
+        _id: 0,
+        name: "Andrew",
+        teachers: [1, 23, 4, 5]
+      }
+      // Teachers
+      {
+        _id: 23,
+        name: "John Doe"
+      }
+    </pre><p>How to find all students that have a particular teacher?</p><p>Can add an index on teachers key in students.</p><p>When you index an array, get <em>multi-key index</em>, monogo indexes all the values in the array for all the documents</p><pre>
+      // Create Index
+      db.students.ensureIndex( { 'teachers' : 1 } );
+
+      // Use Index: Find all student docs where the teachers array has both values 1 and 3
+      db.students.find( { 'teachers' : { '$all' : [ 1, 3 ] } } );
+
+      // Chain .explain at end of query to verify that index is being used
+      db.students.find( { 'teachers' : { '$all' : [ 1, 3 ] } } ).explain();
+
+      //Sample output
+      "cursor" : BtreeCursor teachers_1"
+      ...
+    </pre><h2>Benefits of Embedding</h2><ul><li>Improved read performance: spinning disks, high latency, &gt;1ms to get to first byte, but each addiitional byte comes quickly (high bandwidth)</li><li>Performance improvement from co-locating data</li><li>Avoid round trips to the database</li></ul></div><!-- End row --></div><!-- End notes-container -->
