@@ -60,7 +60,7 @@
         </ol>
     </div>
 
-    <h2>1:1 Relations</h2>
+    <h2>1:1 Relation</h2>
     <p>Each item corresponds to exactly one item, eg: one employee has one resume and one resume belongs to one employee</p>
     <h3>Consider whether to model as separate collection or embed</h3>
     <ul>
@@ -75,6 +75,7 @@
     <p>Also shouldn't embed city within people because city will get duplicated in each person doc, which could lead to inconsistency</p>
 
     <h3>True Linking Example</h3>
+    <p>Link city in <code>people</code> doc to _id in <code>city</code> doc</p>
     <pre>
       // People Collection
       {
@@ -88,5 +89,69 @@
       }
     </pre>
 
-  </div>
-</div>
+    <h2>One to Few Relation</h2>
+    <p>Example: Post to Comment, embed Comments within Post collection because there's only a few comments per post</p>
+
+    <h2>Many to Many Relation</h2>
+    <p>Example: Books to Authors, Students to Teachers</p>
+    <p>Tends to be Few to Few, example: each Book probably has small number of Authors, each individual Author has written a relatively small number of books</p>
+    <pre>
+      // Authors
+      {
+        _id: 27,
+        author_name: "Margaret",
+        books: [12, 7, 8]
+      }
+      // Books
+      {
+        _id: 12,
+        title: "Gone with the Wind",
+        authors: [27]
+      }
+    </pre>
+    <div class="notes-attention">
+      <p>Not recommended to link in both directions because could get inconsistency</p>
+      <p>Careful about embedding when it might not apply. Example: Teachers Students - may want to add a teacher to the system before they have any students. In this case, wouldn't make sense to embed teachers in students</p>
+    </div>
+
+    <h2>Multikey Indexes</h2>
+    <pre>
+      // Students
+      {
+        _id: 0,
+        name: "Andrew",
+        teachers: [1, 23, 4, 5]
+      }
+      // Teachers
+      {
+        _id: 23,
+        name: "John Doe"
+      }
+    </pre>
+    <p>How to find all students that have a particular teacher?</p>
+    <p>Can add an index on teachers key in students.</p>
+    <p>When you index an array, get <em>multi-key index</em>, monogo indexes all the values in the array for all the documents</p>
+    <pre>
+      // Create Index
+      db.students.ensureIndex( { 'teachers' : 1 } );
+
+      // Use Index: Find all student docs where the teachers array has both values 1 and 3
+      db.students.find( { 'teachers' : { '$all' : [ 1, 3 ] } } );
+
+      // Chain .explain at end of query to verify that index is being used
+      db.students.find( { 'teachers' : { '$all' : [ 1, 3 ] } } ).explain();
+
+      //Sample output
+      "cursor" : BtreeCursor teachers_1"
+      ...
+    </pre>
+
+    <h2>Benefits of Embedding</h2>
+    <ul>
+      <li>Improved read performance: spinning disks, high latency, &gt;1ms to get to first byte, but each addiitional byte comes quickly (high bandwidth)</li>
+      <li>Performance improvement from co-locating data</li>
+      <li>Avoid round trips to the database</li>
+    </ul>
+
+  </div><!-- End row -->
+</div><!-- End notes-container -->
