@@ -245,7 +245,7 @@ module.exports = function (grunt) {
     // Re-write url's to make yeoman dist dir work with github pages
     replace: {
       dist: {
-        src: ['<%= yeoman.dist %>/views/main.html'],
+        src: ['<%= yeoman.dist %>/views/*.html'],
         overwrite: true,
         replacements: [
           {
