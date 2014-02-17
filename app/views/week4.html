@@ -185,5 +185,15 @@
       </p>
     </div>
 
+    <h2>Index Selectivity</h2>
+    <p>When designing indexes, want it to be as "selective" as possible (similar to relational world)</p>
+    <p>
+      For example, if have a collection of logging operation codes and timestamp,
+      makes more sense to index  first by timestamp, then opcode. Because opcode only eliminates about 1/5 of the data,
+      whereas timestamp could have millions of per opcode.
+    </p>
+
+    <h2>Hinting an Index</h2>
+
   </div><!-- End row -->
 </div><!-- End notes-container -->
