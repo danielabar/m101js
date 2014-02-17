@@ -39,8 +39,18 @@ hr {
   border-top: 2px solid #BDB8F5;
 }
 
-pre {
+/*pre {
   background-color: #DDD9D9;
+}*/
+pre {
+  background-color: #000;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  -o-border-radius: 8px;
+  -ms-border-radius: 8px;
+  -khtml-border-radius: 8px;
+  border-radius: 8px;
+  color: #65B042;
 }
 
 code {

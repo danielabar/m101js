@@ -24,6 +24,10 @@ angular.module('m101jsApp', [
         templateUrl: 'views/week3.html',
         controller: 'Week3Ctrl'
       })
+      .when('/week4', {
+        templateUrl: 'views/week4.html',
+        controller: 'Week4Ctrl'
+      })
       .otherwise({
         redirectTo: '/'
       });
