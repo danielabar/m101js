@@ -253,7 +253,7 @@
       Consider 2D plane of x and y co-ordinates, with a few business (represented as small circles), scatterred about,
       and a Person (P) located at a particular co-ordinate x,y. How to find what's closest to that person?
     </p>
-    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="height: 208px;">
       <line id="horizontal" x1="0"  y1="100" x2="200" y2="100" style="stroke:#006600;"></line>
       <line id="vertical" x1="100"  y1="200" x2="100" y2="0" style="stroke:#006600;"></line>
       <circle id="nw" cx="50" cy="80" r="3" style="stroke:#292A29; fill:#292A29"></circle>
@@ -263,6 +263,149 @@
       <text id="person-ne" x="118" y="60" style="fill: #EB0CAC; stroke: none; font-size: 15px;">P</text>
       <text id="person-coord" x="129" y="61" style="fill: #EB0CAC; stroke: none; font-size: 13px;">(x,y)</text>
     </svg>
+
+    <p>Document must have x/y location storage, field name could be anything</p>
+    <pre>
+      {
+        name: "Chapters",
+        location: [-42.5, 36.4]
+      }
+    </pre>
+
+    <p>Must tell mongo that index is a 2D geospatial index</p>
+    <pre>&gt; ensureIndex({"location":2d})</pre>
+
+    <p>To work with this data, use $near operator</p>
+    <pre>find({location:{$near:[x,y]}})</pre>
+
+    <p>
+      Mongo will return results in increasing order of distance.
+      ypically will use <code>limit</code> to gether with $near, for example, to only return first 20 results.
+    </p>
+    <pre>find({location:{$near:[x,y]}}).limit(20)</pre>
+
+    <h2>Geospatial Index (3D)</h2>
+    <p>Considers curvature of the earth</p>
+    <img class="notes-image" src="images/geospatial-index-3d.jpg" class="img-responsive" alt="Mongo Geospatial Index 3D">
+
+    <p>
+      Location specified by <strong>longitude</strong>, vertical lines from one pole to the other, and <strong>latitude</strong> - horizontal across the globe.
+      <br>
+      If you're closer to the equator, lines of latitude are further apart, as you get closer to the poles, latitude lines closer together.
+      <br>
+      For searching by nearest location, can also specify "max distance" in radians, will return docs with location closer than max.
+    </p>
+
+    <div class="notes-info">
+      <h3>Geometry Refresher</h3>
+      <p>
+        If you have a circle with distance specified in meters (d above),
+        <br>
+        then distance 'd' swept by arc theta is = Pi * r, where r is radius of earth in meters.
+        <br>
+        If you know the distance, example, want to find docs within 100m of this location,
+        <br>
+        then arc in radians is distance divided by radius of earth - that gives you angle theta
+      </p>
+    </div>
+
+    <p>
+      Spherical model was introduced in mongo after 2D, uses some of the same facilities, therefore still use type '2d', but will query in different way.
+      <br>
+      Revising previous example:
+      <pre>
+        {
+          name: "Chapters",
+          location: [-42.5, 36.4]
+        }
+      </pre>
+      In this case, location[x,y] === location[longitude,latitude]
+      <br>
+      In cartesian geometry, whether its x,y or y,x doesn't matter, but in spherical model it does matter,
+      <br>
+      <strong>Order is important:</strong> longitude comes first, then latitude
+    </p>
+
+    <p>
+      To execute search, use <code>runCommand</code> instead of <code>find</code>
+      <pre>db.runCommand({geoNear:'stores', near:[50,50], spherical:true, maxDistance:1})</pre>
+      <ul>
+        <li>Need to specify collection because runCommand otherwise won't know which collection to look in</li>
+        <li>Near longitude 50, latitude 50</li>
+        <li>Specifying <code>spherical:true</code> tells mongo to use spherical model.</li>
+        <li>maxDistance of 1 radian, there are about 6Pi radians all the way around the earth</li>
+      </ul>
+    </p>
+
+    <h2>Logging Slow Queries and Profiling</h2>
+    <p>
+      Default facility, mongod automatically logs queries run &gt; 100ms
+      <br>
+      On Windows, if mongod started as service, log is at: <code>C:\mongodb\log\*.log</code>
+    </p>
+
+    <h3>Profiler</h3>
+    <p>Will write entries.documents to system.profile for any query that takes longer than specified period of time.</p>
+    <dl class="dl-horizontal">
+      <dt>Level 0</dt>
+      <dd>Default, profiler off</dd>
+      <dt>Level 1</dt>
+      <dd>Log slow queries, for performance</dd>
+      <dt>Level 2</dt>
+      <dd>Log all queries, use as general debugging feature to see all traffic and verify system does what you expect</dd>
+    </dl>
+
+    <h4>Enable Profile Level</h4>
+    <pre>$ mongod -dbpath /usr/local/var/mongodb --profile 1 --slowms 2</pre>
+    <p>Then run a slow query, then in shell, find all slow queries:</p>
+    <pre>&gt; db.system.profile.find().pretty()</pre>
+
+    <h4>Search System Profile</h4>
+    <pre>&gt; db.system.profile.find({ns:/school.students/}).sort({ts:1}).pretty()</pre>
+    <dl class="dl-horizontal">
+      <dt>ns</dt>
+      <dd>namespace, eg school database, students collection</dd>
+      <dt>ts</dt>
+      <dd>timestamp</dd>
+    </dl>
+
+    <p>Search for anything slower than a certain duration</p>
+    <pre>&gt; db.system.profile.find({millis:{$gt:1}}).sort({ts:1}).pretty()</pre>
+
+    <p>Inspect profile level and status from mongo shell</p>
+    <pre>
+      &gt; db.getProfilingLevel()   // 1
+      &gt; db.getProfilingStatus()  // {"was":1, "slowms" : 2}
+    </pre>
+
+    <h4>Enable/Disable Profiling in Mongo Shell</h4>
+    <pre>
+      &gt; db.setProfilingLevel(1,4)  // slow queries above 4 ms
+      &gt; db.setProfilingLevel(0)    // turn off profiling
+    </pre>
+
+    <h2>Mongostat</h2>
+    <ul>
+      <li>Named after unix iostat command (in Windows, its perfmon), system level information, run at cli: mongostat
+      <li>idx miss % : miss rate to index in memory, whether or not when index is accessed, does it have to go to disk?</li>
+      <li><em>Careful</em>, will show 0 when you're not using an index at all, therefore not very useful</li>
+    </ul>
+
+    <h2>Sharding Overview</h2>
+    <img class="notes-image" src="images/sharding-overview.jpg" class="img-responsive" alt="Sharding Overview">
+    <ul>
+      <li>Technique for splitting up large collection among multiple servers</li>
+      <li>Deploy multiple mongod servers (in replica sets), with mongos router in front, app talks to mongos</li>
+      <li>Must choose a shard key, eg student_id</li>
+      <li>mongos is a range based system, based on student_id, will send request to appropriate server</li>
+      <li>Insert <strong>must</strong> include the shard key in order for insert to complete</li>
+      <li>For update/remove/find, if mongos is not given shard key, will <strong>broadcast</strong> request to all different shards that cover the collection</li>
+      <li>Will get better performance if specify the shard key.</li>
+      <li>If performing update and don't know shard key, must make it multi-update so mongos knows it needs to broadcast.</li>
+      <li>mongos is often co-located on the same machine as the application.</li>
+      <li>Can have multiple mongos services</li>
+      <li>mongos binary is in the mongo distribution</li>
+    </ul>
 
   </div><!-- End row -->
 </div><!-- End notes-container -->
