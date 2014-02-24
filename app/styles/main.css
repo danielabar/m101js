@@ -35,13 +35,33 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
+/* Fix navbar for mobile */
+@media (max-width: 767px)
+{
+    .navbar-fixed-top
+    {
+    position: relative;
+    top: auto;
+    }
+}
+
+@media ( max-width : 767px) {
+    .navbar-fixed-top {
+        position: relative;
+        top: auto;
+    }
+    .navbar-collapse {
+        max-height: none;
+    }
+    body {
+        margin: 0;
+    }
+}
+
 hr {
   border-top: 2px solid #BDB8F5;
 }
 
-/*pre {
-  background-color: #DDD9D9;
-}*/
 pre {
   background-color: #000;
   -moz-border-radius: 8px;
