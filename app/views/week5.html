@@ -1,0 +1,169 @@
+<div class="notes-container">
+  <div class="row">
+
+    <h1>Aggregation Framework</h1>
+    <hr>
+
+    <p>
+      Aggregation Framework has its roots in SQL GROUP BY clause.
+      <br>
+      Consider a simple example from SQL world, products catalog, want count of products per manufacturer.
+    </p>
+
+    <img src="images/products-aggregation.jpg" class="img-responsive notes-image" alt="Products Aggregation">
+    <br>
+
+    <h2>Group By / Count equivalent in Mongo</h2>
+    <p>Consider products collection in database named "agg"</p>
+
+    <img src="images/products-collection.jpg" class="img-responsive" alt="Products Collection">
+
+    <p>To get the sum, create a new key <code>num_products</code> and sum for each one</p>
+    <pre>
+      use agg
+      db.products.aggregate([
+        {$group:
+          {
+            _id : "$manufacturer",
+            num_products : { $sum : 1 }
+          }
+        }
+      ])
+    </pre>
+
+    <div class="notes-info">
+      <ul>
+        <li><code>$group</code> operator is in its own document</li>
+        <li><code>aggregate</code> takes an array, there could be other operators</li>
+        <li>manufacturer is <em>key</em> in products collection, but in this context, its <em>data</em>, that's why must prepend <code>$</code> and its quoted</li>
+        <li>Limitation of aggregation framework is that it returns results as a document, therefore, usual rule of document applies, can't be &gt; 16M</li>
+      </ul>
+    </div>
+
+    <h2>Aggregation Pipeline</h2>
+    <img src="images/aggregation-pipeline.jpg" class="img-responsive notes-image" alt="Aggregation Pipeline">
+
+    <div class="notes-info">
+      <ul>
+        <li>Similar to UNIX pipes</li>
+        <li>Start at collection, then documents are piped through processing pipeline, going through a series of <em><strong>stages</strong></em></li>
+        <li>Stages can appear multiple times inside the pipeline</li>
+        <li>Each item in aggregation array is a stage that will transform the collection</li>
+      </ul>
+    </div>
+
+    <h3>Stage: $project</h3>
+    <ul>
+      <li>Often the first stage, but doesn't have to be.</li>
+      <li>Select which keys you want, can reshape the documents.</li>
+      <li>1-1: For every doc that project sees, sends out one doc</li>
+    </ul>
+
+    <h3>Stage: $match</h3>
+    <ul>
+      <li>Filter, eg: if only want docs where manufacturer = apple</li>
+      <li>n-1: May only see a subset of documents, so may reduce number of docs</li>
+    </ul>
+
+    <h3>Stage: $group</h3>
+    <ul>
+      <li>Aggregation functions</li>
+      <li>n-1: May reduce number of docs</li>
+    </ul>
+
+    <h3>Stage: $sort</h3>
+    <ul>
+      <li>Sorts</li>
+      <li>1:1 - for every doc it sees, produces another doc</li>
+    </ul>
+
+    <h3>Stage: $skip</h3>
+    <ul>
+      <li>Only makes sense after sorting, skips some docs</li>
+      <li>n-1: If you skip forward 10, will obviously produce less docs</li>
+    </ul>
+
+    <h3>Stage: $limit</h3>
+    <ul>
+      <li>Limit number of docs produced</li>
+      <li>Usually used with skip</li>
+      <li>n-1: Limits number of docs that come through the pipeline</li>
+    </ul>
+
+    <h3>Stage: $unwind</h3>
+    <ul>
+      <li>Un-joins data (recall docs can have arrays of embedded docs, "pre-joined")</li>
+      <li>Can unwind a particular key to produce doc for every sub-element</li>
+      <li>Normalizes data so it can be aggregated</li>
+      <li>1-n: Creates an "explosion" of data</li>
+    </ul>
+
+    <h3>Simple Example Revisited</h3>
+
+    <img src="images/products-aggregation-upsert.jpg" class="img-responsive notes-image" alt="Products Aggregation Upsert">
+
+    <p>
+      Aggregation framework doing upsert on results collection.
+      <br>
+      As each document is processed, framework checks to see if manufacturer value is not in results, adds it with $sum of 1,
+      <br>
+      otherwise, updates existing doc, incrementing num_products by 1.
+    </p>
+
+    <h2>Compound Grouping</h2>
+    <pre>
+      use agg
+      db.products.aggregate([
+          {$group:
+           {
+         _id: {
+             "manufacturer":"$manufacturer",
+             "category" : "$category"},
+              num_products:{$sum:1}
+           }
+          }
+      ])
+    </pre>
+
+    <p>
+      <ul>
+        <li>_id keys can be named anything, don't have to use "manufacturer"</li>
+        <li>_id can be a document (not just in aggregation), as long as it's unique</li>
+        <li>Can have as many keys as you like in compound _id</li>
+        <li>Can save this multi-line command in a JavaScript file, for example compound1.js, then run it in the shell: <code>mongo &lt; compound1.js</code></li>
+      </ul>
+    </p>
+
+    <h2>Aggregation Expressions</h2>
+    <p>Used with grouping, all of these apply as grouped by specified _id</p>
+    <dl class="dl-horizontal">
+      <dt>$sum</dt>
+      <dd>Count if add one each time you see a key, OR can add value of key to sum it up</dd>
+      <dt>$avg</dt>
+      <dd>Average values of key across documents</dd>
+      <dt>$min/$max</dt>
+      <dd>Minimum/Maximum value of key across documents respectively</dd>
+      <dt>$push/$addtoSet</dt>
+      <dd>Build array, addtoSet adds uniquely (more useful than push)</dd>
+      <dt>$first/$last</dt>
+      <dd>Must sort first, then can retrieve first/last of result respectively</dd>
+    </dl>
+
+    <h3>Using $sum</h3>
+    <p>To sum the prices across all documents, by manufacturer</p>
+    <pre>
+      use agg
+      db.products.aggregate([
+          {$group:
+           {
+             _id: {
+                 "maker":"$manufacturer"
+             },
+             sum_prices:{$sum:"$price"}
+          }
+        }
+      ])
+    </pre>
+
+  </div><!-- End row -->
+</div><!-- End notes-container -->
