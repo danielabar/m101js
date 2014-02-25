@@ -20,7 +20,7 @@
            }
           }
       ])
-    </pre><p><ul><li>_id keys can be named anything, don't have to use "manufacturer"</li><li>_id can be a document (not just in aggregation), as long as it's unique</li><li>Can have as many keys as you like in compound _id</li><li>Can save this multi-line command in a JavaScript file, for example compound1.js, then run it in the shell: <code>mongo &lt; compound1.js</code></li></ul></p><h2>Aggregation Expressions</h2><p>Used with grouping, all of these apply as grouped by specified _id</p><dl class="dl-horizontal"><dt>$sum</dt><dd>Count if add one each time you see a key, OR can add value of key to sum it up</dd><dt>$avg</dt><dd>Average values of key across documents</dd><dt>$min/$max</dt><dd>Minimum/Maximum value of key across documents respectively</dd><dt>$push/$addtoSet</dt><dd>Build array, addtoSet adds uniquely (more useful than push)</dd><dt>$first/$last</dt><dd>Must sort first, then can retrieve first/last of result respectively</dd></dl><h3>Using $sum</h3><p>To sum the prices across all documents, by manufacturer</p><pre>
+    </pre><p><ul><li>_id keys can be named anything, don't have to use "manufacturer"</li><li>_id can be a document (not just in aggregation), as long as it's unique</li><li>Can have as many keys as you like in compound _id</li><li>Can save this multi-line command in a JavaScript file, for example compound1.js, then run it in the shell: <code>mongo &lt; compound1.js</code></li></ul></p><h2>Aggregation Expressions</h2><p>Used with grouping, all of these apply as grouped by specified _id</p><dl class="dl-horizontal"><dt>$sum</dt><dd>Count if add one each time you see a key, OR can add value of key to sum it up</dd><dt>$avg</dt><dd>Average values of key across documents</dd><dt>$min/$max</dt><dd>Minimum/Maximum value of key across documents respectively</dd><dt>$push/$addtoSet</dt><dd>Build array, addtoSet adds uniquely (more useful than push)</dd><dt>$first/$last</dt><dd>Must sort first, then can retrieve first/last of result respectively</dd></dl><h3>Using $sum</h3><p>Sum the prices across all documents, by manufacturer.<br>Instead of <code>$sum:1</code> which effectively counts, provide name of field that contains the value you want to sum, in this case, <code>"$price"</code></p><pre>
       use agg
       db.products.aggregate([
           {$group:
@@ -31,5 +31,166 @@
              sum_prices:{$sum:"$price"}
           }
         }
+      ])
+    </pre><h3>Using $avg</h3><p>Calculate average product price by category</p><pre>
+      db.products.aggregate([
+        {$group:
+         {
+         _id: {
+             "category":"$category"
+         },
+          avg_price:{$avg:"$price"}
+         }
+        }
+    ])
+    </pre><h3>Using $addToSet</h3><p>There is no parallel of this in SQL. Example, to answer the question: What products does each manufacturer sell?<br>Group by manufacturer, then for each manufacturer, create new array of categories they sell in. Array values will be unique</p><pre>
+      db.products.aggregate([
+          {$group:
+           {
+             _id: {
+                 "maker":"$manufacturer"
+             },
+             categories:{$addToSet:"$category"}
+             }
+          }
+      ])
+    </pre><h3>Using $push</h3><p>Similar to addToSet, but doesn't guarantee each item will only be added once, will push for each document found.</p><h3>Using $max and $min</h3><p>Both behave in similar fashion. Picks out maximum (or minimum) value in a grouping, and makes it available as a new key.</p><pre>
+      db.products.aggregate([
+          {$group:
+           {
+             _id: {
+                 "maker":"$manufacturer"
+             },
+             maxprice:{$max:"$price"}
+            }
+          }
+      ])
+    </pre><div class="notes-attention">If you also want to know the name of the product that corresponds to the max price, advanced topic, this is difficult to get.</div><h2>Double $group stages</h2><p>Any aggregation stage can be run more than once (can't do this in SQL),<br>For example, consider collection that contains scores for each student, in each class. Any given student_id/class_id combination may appear multiple times, eg: once for homework, once for quiz etc.</p><img src="images/d6bf0f15.double-group-student-scores.jpg" class="img-responsive notes-image" alt="Double Group Student Scores"><p>What is average class grade in each class?<br>First need to average all students grades within class, then need to average those grades.</p><pre>
+      db.grades.aggregate([
+        {'$group':
+          {_id:
+            {
+              class_id:"$class_id",
+              student_id:"$student_id"
+            },
+            'average':{"$avg":"$score"}
+          }
+        },
+        {'$group':
+          {_id:"$_id.class_id", 'average':{"$avg":"$average"}}
+        }
+      ])
+    </pre><p>First group by class_id and student_id and average those scores. Then pipe those documents through secondary grouping, which will use class_id from previous grouping as its _id.</p><h2>Aggregation Pipeline Stage: $project 1:1</h2><ul><li>Reshape docs as they come through pipeline</li><li>Remove key(s)</li><li>Add new key(s)</li><li>Reshape keys: take key and put it in sub-doc with another key</li><li>Use some simple functions on keys: $toUpper, $toLower, $add, $multiply</li></ul><h3>Reasons to use</h3><ul><li>Use to clean up data</li><li>Eliminate/cherry-pick certain keys out of documents, can save memory, serves as form of filtering before sending documents to filtering phase</li></ul><p>Example projection on products collection</p><pre>
+      db.products.aggregate([
+          {$project:
+           {
+             _id:0,
+             'maker': {$toLower:"$manufacturer"},
+             'details': {'category': "$category",
+                   'price' : {"$multiply":["$price",10]}
+                  },
+             'item':'$name'
+           }
+          }
+      ])
+    </pre><div class="notes-info">_id:0 means do not include _id field.<br>Creating new key called maker, containing to lower case version of manufacturer.<br>Creating new key called details, which is a document containing category, and price which is a multiplication.<br>Creating new key called item, contaiing name.</div><h2>Aggregation Pipeline Stage: $match n:1</h2><p>Performs filter on docs as they pass through pipe.<br>Has a reducing effect<br>Example: zips collection, if only want to match on documents in New York state</p><pre>
+      db.zips.aggregate([
+          {$match:
+           {
+            state:"NY"
+           }
+          }
+      ])
+    </pre><p>Can further group these results, to find what is population of each city within NY.<br>This is example of multi-phase aggregation.</p><pre>
+      db.zips.aggregate([
+          {$match:
+           {
+            state:"NY"
+           }
+          },
+          {$group:
+           {
+             _id: "$city",
+             population: {$sum:"$pop"},
+             zip_codes: {$addToSet: "$_id"}
+           }
+          }
+      ])
+    </pre><p>Can further, reshape docs to make them look better: suppress city, rename _id to city</p><pre>
+      db.zips.aggregate([
+          {$match:
+           {
+            state:"NY"
+           }
+          },
+          {$group:
+           {
+             _id: "$city",
+             population: {$sum:"$pop"},
+             zip_codes: {$addToSet: "$_id"}
+           }
+          },
+          {$project:
+           {
+             _id: 0,
+             city: "$_id",
+             population: 1,
+             zip_codes:1
+           }
+          }
+      ])
+    </pre><h2>Aggregation Pipeline Stage: $sort</h2><ul><li>Sorts docs, but is memory hog, doesn't go to disk, will sort in memory.</li><li>If sort is before grouping but after match, can use an index, but if after grouping phase, will not use index.</li><li>Sort can go before or after group phase.</li><li>Can sort multiple times</li></ul><p>Example: sorting at end of pipeline, use zips dataset</p><pre>
+      db.zips.aggregate([
+          {$match:
+           {
+            state:"NY"
+           }
+          },
+          {$group:
+           {
+             _id: "$city",
+             population: {$sum:"$pop"},
+           }
+          },
+          {$project:
+           {
+             _id: 0,
+             city: "$_id",
+             population: 1,
+           }
+          },
+          {$sort:
+           {
+            population:-1
+           }
+          }
+      ])
+    </pre><h2>Aggregation Pipeline Stage: $skip and $limit</h2><ul><li>Same as using skip or limit in simple find.</li><li>Doesn't make sense to skip or limit unless you first sort.</li><li>Skip first, then limit.</li></ul><pre>
+      db.zips.aggregate([
+          {$match:
+           {
+            state:"NY"
+           }
+          },
+          {$group:
+           {
+             _id: "$city",
+             population: {$sum:"$pop"},
+           }
+          },
+          {$project:
+           {
+             _id: 0,
+             city: "$_id",
+             population: 1,
+           }
+          },
+          {$sort:
+           {
+            population:-1
+           }
+          },
+          {$skip: 10},
+          {$limit: 5}
       ])
     </pre></div><!-- End row --></div><!-- End notes-container -->
