@@ -4,6 +4,7 @@ angular.module('m101jsApp', [
   'ngCookies',
   'ngResource',
   'ngSanitize',
+  'ngAnimate',
   'ngRoute'
 ])
   .config(function ($routeProvider) {
